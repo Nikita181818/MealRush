@@ -14,19 +14,26 @@ const RestaurantContainer = () => {
   }, []);
 
   const fetchData = async () => {
-    const data = await fetch(
-      "https://www.swiggy.com/dapi/restaurants/list/v5?lat=30.32750&lng=78.03250&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
-    );
+    try {
+      const response = await fetch(
+        "https://www.swiggy.com/dapi/restaurants/list/v5?lat=30.32750&lng=78.03250&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
+      );
+      const json = await response.json();
+      console.log("API Response:", json); // Log the full response
 
-    const json = await data.json();
-    console.log(json);
+      // Safely extract restaurants data
+      const restaurants =
+        json?.data?.cards[4]?.card?.card?.gridElements?.infoWithStyle?.restaurants || [];
+      console.log("Extracted Restaurants:", restaurants); // Log the extracted restaurants array
 
-    setResList(
-      json?.data?.cards[4]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-    );
-    setFilteredList(
-      json?.data?.cards[4]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-    );
+      // Update both lists if data is present
+      setResList(restaurants);
+      setFilteredList(restaurants);
+    } catch (error) {
+      console.error("Error fetching restaurants data: ", error);
+      setResList([]); // In case of error, set empty array
+      setFilteredList([]); // Similarly, set empty filtered list
+    }
   };
 
   const onlineStatus = useOnlineStatus();
@@ -38,9 +45,14 @@ const RestaurantContainer = () => {
     );
   }
 
-  return resList.length === 0 ? (
-    <Shimmer />
-  ) : (
+  // Log the state of resList to verify data loading
+  console.log("resList State:", resList);
+
+  if (resList.length === 0) {
+    return <Shimmer />; // Show shimmer if no data is loaded yet
+  }
+
+  return (
     <div className="p-6">
       <div className="flex items-center justify-center mb-6 space-x-4">
         <input
@@ -55,7 +67,7 @@ const RestaurantContainer = () => {
           onClick={() => {
             setFilteredList(
               resList.filter((restaurant) =>
-                restaurant.info.name.toLowerCase().includes(searchText)
+                restaurant.info.name.toLowerCase().includes(searchText.toLowerCase())
               )
             );
           }}
@@ -63,6 +75,7 @@ const RestaurantContainer = () => {
         >
           Search
         </button>
+
         <button
           onClick={() => {
             setFilteredList(
@@ -79,8 +92,8 @@ const RestaurantContainer = () => {
         {filteredList.map((restaurant) => (
           <Link
             key={restaurant.info.id}
-            // to={`/restaurantmenu/${restaurant.info.id}`}
-            to={"/restaurantmenu/:restaurant.info.id"}
+            to={`/restaurantmenu/${restaurant.info.id}`}  // Using backticks for dynamic string
+            // Corrected the routing with backticks
             className="transition-transform transform hover:scale-105"
           >
             <RestaurantCard resData={restaurant} />
